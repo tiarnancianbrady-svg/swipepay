@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: swipepay
+      POSTGRES_PASSWORD: swipepay
+      POSTGRES_DB: swipepay
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:
