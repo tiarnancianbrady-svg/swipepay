@@ -84,3 +84,13 @@ Includes:
 - Run seed script to create mock invoices
 - Sign in with a Google account after configuring OAuth
 - Open dashboard and triage seeded Inbox invoices via swipe/buttons
+
+## OAuth troubleshooting (local development)
+If Google sign-in redirects to `/api/auth/signin?error=OAuthSignin`, verify:
+- `NEXTAUTH_URL` exactly matches your local origin (usually `http://localhost:3000`)
+- Google OAuth **Authorized redirect URI** includes `http://localhost:3000/api/auth/callback/google`
+- Google OAuth **Authorized JavaScript origins** includes `http://localhost:3000`
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set and app server was restarted
+
+The sign-in page now shows missing environment variables directly to make setup issues easier to diagnose.
+
