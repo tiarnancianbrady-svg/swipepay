@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Provider {
+  google
+}
+
+enum InvoiceFrequency {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  UNKNOWN
+}
+
+enum InvoiceStatus {
+  INBOX
+  APPROVAL_QUEUE
+  NEEDS_INFO
+}
+
+enum ActionType {
+  INGESTED
+  PARSED
+  SWIPE_RIGHT
+  SWIPE_LEFT
+}
+
+model User {
+  id            String            @id @default(cuid())
+  email         String            @unique
+  name          String?
+  createdAt     DateTime          @default(now())
+  accounts      Account[]
+  sessions      Session[]
+  connections   InboxConnection[]
+  actionLogs    ActionLog[]
+}
+
+model InboxConnection {
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  provider      Provider       @default(google)
+  accessToken   String?
+  refreshToken  String?
+  apEmailAddress String
+  createdAt     DateTime       @default(now())
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailMessages EmailMessage[]
+  invoices      Invoice[]
+
+  @@index([userId])
+}
+
+model EmailMessage {
+  id             String          @id @default(cuid())
+  connectionId   String
+  gmailMessageId String          @unique
+  threadId       String
+  from           String
+  subject        String
+  date           DateTime
+  snippet        String
+  rawLink        String?
+  createdAt      DateTime        @default(now())
+  connection     InboxConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  invoice        Invoice?
+
+  @@index([connectionId])
+}
+
+model Invoice {
+  id                  String           @id @default(cuid())
+  connectionId        String
+  emailMessageId      String?          @unique
+  vendorName          String
+  vendorDomain        String?
+  logoUrl             String?
+  amountCents         Int
+  currency            String
+  frequency           InvoiceFrequency @default(UNKNOWN)
+  frequencyConfidence Float            @default(0)
+  serviceDescription  String
+  invoiceNumber       String?
+  dueDate             DateTime?
+  invoiceFileUrl      String
+  status              InvoiceStatus    @default(INBOX)
+  needsInfoNote       String?
+  extractedJson       Json?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  connection          InboxConnection  @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  emailMessage        EmailMessage?    @relation(fields: [emailMessageId], references: [id], onDelete: SetNull)
+  attachments         InvoiceAttachment[]
+  actionLogs          ActionLog[]
+
+  @@index([connectionId, status])
+}
+
+model InvoiceAttachment {
+  id         String   @id @default(cuid())
+  invoiceId  String
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  storageUrl String
+  createdAt  DateTime @default(now())
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model ActionLog {
+  id         String     @id @default(cuid())
+  invoiceId  String
+  userId     String
+  actionType ActionType
+  note       String?
+  createdAt  DateTime   @default(now())
+  invoice    Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
