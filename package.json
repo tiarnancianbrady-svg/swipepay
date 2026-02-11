@@ -10,7 +10,9 @@
     "test": "vitest run",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "db:check": "tsx scripts/db-check.ts",
+    "prisma:push": "prisma db push"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

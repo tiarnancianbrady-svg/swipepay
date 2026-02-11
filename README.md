@@ -22,33 +22,51 @@ SwipePay is a Next.js 14 monorepo MVP for AP inbox triage. It connects a Gmail i
   - Needs More Info (with required note)
 - Action logging (`INGESTED`, `PARSED`, `SWIPE_RIGHT`, `SWIPE_LEFT`)
 
-## Local setup
-1. Copy env file:
-   ```bash
-   cp .env.example .env
-   ```
-2. Start Postgres:
+## Local setup (host-run app + dockerized Postgres)
+This is the recommended local dev mode and matches the default `DATABASE_URL` in `.env.example`.
+
+1. Start Postgres:
    ```bash
    docker compose up -d
    ```
-3. Install dependencies:
+
+2. Install dependencies:
    ```bash
    npm install
    ```
-4. Generate Prisma client and run migrations:
+
+3. Copy env example to local env file:
    ```bash
-   npx prisma migrate dev --name init
+   cp .env.example .env.local
    ```
-5. Seed sample data:
+
+4. Generate Prisma client:
    ```bash
-   npm run prisma:seed
+   npm run prisma:generate
    ```
-6. Run app:
+
+5. Apply schema in local dev:
+   ```bash
+   npm run prisma:push
+   ```
+
+6. Verify DB connectivity:
+   ```bash
+   npm run db:check
+   ```
+
+7. Run app:
    ```bash
    npm run dev
    ```
 
 Open http://localhost:3000.
+
+### Docker vs host `DATABASE_URL`
+- **Host-run Next.js app (`npm run dev`)**: use `localhost:5432`.
+- **Next.js inside docker-compose**: use `postgres:5432` (service name), not `localhost`.
+
+`.env.example` includes both variants.
 
 ## Required env vars
 - `DATABASE_URL`
@@ -91,6 +109,29 @@ If Google sign-in redirects to `/api/auth/signin?error=OAuthSignin`, verify:
 - Google OAuth **Authorized redirect URI** includes `http://localhost:3000/api/auth/callback/google`
 - Google OAuth **Authorized JavaScript origins** includes `http://localhost:3000`
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set and app server was restarted
+- DB is reachable with `npm run db:check`
 
 The sign-in page now shows missing environment variables directly to make setup issues easier to diagnose.
 
+## Postgres troubleshooting
+- Check container status:
+  ```bash
+  docker compose ps
+  ```
+- Check Postgres logs:
+  ```bash
+  docker compose logs postgres
+  ```
+- Confirm local port 5432 is listening:
+  - macOS/Linux:
+    ```bash
+    lsof -i :5432
+    ```
+  - Windows (PowerShell):
+    ```powershell
+    netstat -ano | findstr :5432
+    ```
+- Re-run connectivity check:
+  ```bash
+  npm run db:check
+  ```
